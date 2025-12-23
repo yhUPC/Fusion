@@ -290,6 +290,10 @@ class SwinTransformerBlock(nn.Module):
 
         self.register_buffer("attn_mask", attn_mask)
 
+        # [MODIFICATION] LayerScale
+        self.gamma1 = nn.Parameter(1e-2 * torch.ones((dim)), requires_grad=True)
+        self.gamma2 = nn.Parameter(1e-2 * torch.ones((dim)), requires_grad=True)
+
     def calculate_mask(self, x_size):
         H, W = x_size
         img_mask = torch.zeros((1, H, W, 1))
@@ -500,11 +504,11 @@ class Cross_SwinTransformerBlock(nn.Module):
         y = y.view(B, L, C)
 
         # FFN with GDFN
-        x = shortcut_A + self.drop_path_A(x)
-        x = x + self.drop_path_A(self.mlp_A(self.norm2_A(x), x_size))
+        x = shortcut_A + self.drop_path_A(self.gamma1_A * x)
+        x = x + self.drop_path_A(self.gamma2_A * self.mlp_A(self.norm2_A(x), x_size))
 
-        y = shortcut_B + self.drop_path_B(y)
-        y = y + self.drop_path_B(self.mlp_B(self.norm2_B(y), x_size))
+        y = shortcut_B + self.drop_path_B(self.gamma1_B * y)
+        y = y + self.drop_path_B(self.gamma2_B * self.mlp_B(self.norm2_B(y), x_size))
         
         return x, y
 
